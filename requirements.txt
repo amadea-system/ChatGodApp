@@ -10,3 +10,6 @@ pygame_ce
 pytz
 soundfile
 twitchio
+
+openai
+python-dotenv
