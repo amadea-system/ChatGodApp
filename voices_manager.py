@@ -1,12 +1,30 @@
 from audio_player import AudioManager
-from obs_websockets import OBSWebsocketsManager
-from azure_text_to_speech import AzureTTSManager
+
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+if os.getenv('ENABLE_OBS_WEBSOCKETS') == 'true':
+    from obs_websockets import OBSWebsocketsManager
+else:
+    OBSWebsocketsManager = None
+
+SpeechEngine = None
+if os.getenv('SPEECH_ENGINE') == 'azure':
+    from azure_text_to_speech import AzureTTSManager
+    SpeechEngine = AzureTTSManager
+elif os.getenv('SPEECH_ENGINE') == 'kokoro':
+    from kokoro_text_to_speech import KokoroTTSManager
+    SpeechEngine = KokoroTTSManager
+else:
+    raise ValueError("SPEECH_ENGINE must be set to either 'azure' or 'kokoro' in the environment variables.")
 
 class TTSManager:
-    azuretts_manager = AzureTTSManager()
+    tts_speech_engine = SpeechEngine()
     audio_manager = AudioManager()
-    obswebsockets_manager = OBSWebsocketsManager()
+    obswebsockets_manager = OBSWebsocketsManager() if OBSWebsocketsManager else None
 
+    # TODO: These voices are not available in Kokoro TTS, so they will need to be updated. Make Dynamic?
     user1_voice_name = "en-US-DavisNeural"
     user1_voice_style = "random"
     user2_voice_name = "en-US-TonyNeural"
@@ -15,7 +33,7 @@ class TTSManager:
     user3_voice_style = "random"
 
     def __init__(self):
-        file_path = self.azuretts_manager.text_to_audio("Chat God App is now running!") # Say some shit when the app starts
+        file_path = self.tts_speech_engine.text_to_audio("Chat God App is now running!") # Say some shit when the app starts
         self.audio_manager.play_audio(file_path, True, True, True)
 
     def update_voice_name(self, user_number, voice_name):
@@ -45,21 +63,23 @@ class TTSManager:
             voice_name = self.user3_voice_name
             voice_style = self.user3_voice_style
 
-        tts_file = self.azuretts_manager.text_to_audio(text, voice_name, voice_style)
+        tts_file = self.tts_speech_engine.text_to_audio(text, voice_name, voice_style)
 
         # OPTIONAL: Use OBS Websockets to enable the Move plugin filter
-        if user_number == "1":
-            self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 1", True)
-        elif user_number == "2":
-            self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 2", True)
-        elif user_number == "3":
-            self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 3", True)
+        if self.obswebsockets_manager is not None:
+            if user_number == "1":
+                self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 1", True)
+            elif user_number == "2":
+                self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 2", True)
+            elif user_number == "3":
+                self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 3", True)
 
         self.audio_manager.play_audio(tts_file, True, True, True)
 
-        if user_number == "1":
-            self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 1", False)
-        elif user_number == "2":
-            self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 2", False)
-        elif user_number == "3":
-            self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 3", False)
+        if self.obswebsockets_manager is not None:
+            if user_number == "1":
+                self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 1", False)
+            elif user_number == "2":
+                self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 2", False)
+            elif user_number == "3":
+                self.obswebsockets_manager.set_filter_visibility("Line In", "Audio Move - DnD Player 3", False)

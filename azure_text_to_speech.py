@@ -1,9 +1,13 @@
 import os
 import random
 import azure.cognitiveservices.speech as speechsdk
+from azure.cognitiveservices.speech import SpeechSynthesisResult
 from gtts import gTTS
 from pydub import AudioSegment
 import pygame
+
+from dotenv import load_dotenv
+load_dotenv()
 
 AZURE_VOICES = [
     "en-US-DavisNeural",
@@ -80,7 +84,7 @@ class AzureTTSManager:
             voice_style = random.choice(AZURE_VOICE_STYLES)
 
         ssml_text = f"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xmlns:emo='http://www.w3.org/2009/10/emotionml' xml:lang='en-US'><voice name='{voice_name}'><mstts:express-as style='{voice_style}'>{text}</mstts:express-as></voice></speak>"
-        result = self.azure_synthesizer.speak_ssml_async(ssml_text).get()
+        result: SpeechSynthesisResult = self.azure_synthesizer.speak_ssml_async(ssml_text).get()
 
         output = os.path.join(os.path.abspath(os.curdir), f"_Msg{str(hash(text))}{str(hash(voice_name))}{str(hash(voice_style))}.wav")
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:

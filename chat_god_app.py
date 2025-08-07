@@ -10,7 +10,12 @@ import random
 import os
 from voices_manager import TTSManager
 
-TWITCH_CHANNEL_NAME = 'dougdoug' # Replace this with your channel name
+from dotenv import load_dotenv
+load_dotenv()
+
+TWITCH_CHANNEL_NAME = os.getenv('TWITCH_CHANNEL_NAME')
+if TWITCH_CHANNEL_NAME is None:
+    raise ValueError("TWITCH_CHANNEL_NAME is not set in the environment variables. Please set it to your Twitch channel name.")
 
 socketio = SocketIO
 app = Flask(__name__)
